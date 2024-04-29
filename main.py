@@ -1,9 +1,11 @@
 import requests
+import schedule
+import time
 import json
 import os
 
 HETZNER_API_TOKEN = os.getenv("HETZNER_API_TOKEN")
-HETZNER_FIREWALL_ID = os.getenv(HETZNER_FIREWALL_ID)
+HETZNER_FIREWALL_ID = os.getenv("HETZNER_FIREWALL_ID")
 
 if HETZNER_API_TOKEN is None or HETZNER_FIREWALL_ID is None:
     raise ValueError("Please set environment variables for HETZNER_API_TOKEN and HETZNER_FIREWALL_ID")
@@ -30,13 +32,13 @@ def whitelist_ips_in_hetzner(ip_ranges):
                 "protocol": "tcp",
                 "description": "Accept port 443"
             },
-            #{
-            #    "direction": "in",
-            #    "source_ips": ["0.0.0.0/0","::/0"],
-            #    "port": "22",
-            #    "protocol": "tcp",
-            #    "description": "Accept SSH connections"
-            #}
+                        {
+                "direction": "in",
+                "source_ips": ip_ranges,
+                "port": "80",
+                "protocol": "tcp",
+                "description": "Accept port 80"
+            },
         ]
     }
 
@@ -46,6 +48,15 @@ def whitelist_ips_in_hetzner(ip_ranges):
     else:
         print("Failed to whitelist IPs in Hetzner Firewall", response.json())
 
-if __name__ == "__main__":
+def update():
     cloudflare_ips = get_cloudflare_ips()
     whitelist_ips_in_hetzner(cloudflare_ips)
+
+if __name__ == "__main__":
+    update()
+
+    schedule.every().day.at("00:00").do(update)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
