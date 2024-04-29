@@ -1,0 +1,47 @@
+import requests
+import json
+
+HETZNER_API_TOKEN = "YOUR_HETZNER_API_TOKEN"
+HETZNER_FIREWALL_ID = "YOUR_HETZNER_FIREWALL_ID"
+
+def get_cloudflare_ips():
+    response = requests.get('https://www.cloudflare.com/ips-v4')
+    if response.status_code == 200:
+        return response.text.strip().split('\n')
+    else:
+        print("Failed to retrieve Cloudflare IP ranges")
+        return []
+
+def whitelist_ips_in_hetzner(ip_ranges):
+    headers = {
+        'Authorization': f'Bearer {HETZNER_API_TOKEN}',
+        'Content-Type': 'application/json',
+    }
+    payload = {
+        "rules": [
+            {
+                "direction": "in",
+                "source_ips": ip_ranges,
+                "port": "443",
+                "protocol": "tcp",
+                "description": "Accept port 443"
+            },
+            #{
+            #    "direction": "in",
+            #    "source_ips": ["0.0.0.0/0","::/0"],
+            #    "port": "22",
+            #    "protocol": "tcp",
+            #    "description": "Accept SSH connections"
+            #}
+        ]
+    }
+
+    response = requests.post(f'https://api.hetzner.cloud/v1/firewalls/{HETZNER_FIREWALL_ID}/actions/set_rules', headers=headers, data=json.dumps(payload))
+    if 200 <= response.status_code < 203:
+        print("IPs whitelisted successfully in Hetzner Firewall")
+    else:
+        print("Failed to whitelist IPs in Hetzner Firewall", response.json())
+
+if __name__ == "__main__":
+    cloudflare_ips = get_cloudflare_ips()
+    whitelist_ips_in_hetzner(cloudflare_ips)
