@@ -1,8 +1,12 @@
 import requests
 import json
+import os
 
-HETZNER_API_TOKEN = "YOUR_HETZNER_API_TOKEN"
-HETZNER_FIREWALL_ID = "YOUR_HETZNER_FIREWALL_ID"
+HETZNER_API_TOKEN = os.getenv("HETZNER_API_TOKEN")
+HETZNER_FIREWALL_ID = os.getenv(HETZNER_FIREWALL_ID)
+
+if HETZNER_API_TOKEN is None or HETZNER_FIREWALL_ID is None:
+    raise ValueError("Please set environment variables for HETZNER_API_TOKEN and HETZNER_FIREWALL_ID")
 
 def get_cloudflare_ips():
     response = requests.get('https://www.cloudflare.com/ips-v4')
